@@ -1,52 +1,68 @@
-import express from 'express'
-import path from 'path'
-import { fileURLToPath } from 'url'
+// Telegram Mini App API
+const tg = window.Telegram.WebApp;
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = path.dirname(__filename)
+// Раскрываем на весь экран
+tg.expand();
 
-const app = express()
+// Тип пользователя
+type TgUser = {
+  id: number;
+  username?: string;
+  first_name?: string;
+  last_name?: string;
+};
 
-// Home route - HTML
-app.get('/', (req, res) => {
-  res.type('html').send(`
-    <!doctype html>
-    <html>
-      <head>
-        <meta charset="utf-8"/>
-        <title>Express on Vercel</title>
-        <link rel="stylesheet" href="/style.css" />
-      </head>
-      <body>
-        <nav>
-          <a href="/">Home</a>
-          <a href="/about">About</a>
-          <a href="/api-data">API Data</a>
-          <a href="/healthz">Health</a>
-        </nav>
-        <h1>Welcome to Express on Vercel 🚀</h1>
-        <p>This is a minimal example without a database or forms.</p>
-        <img src="/logo.png" alt="Logo" width="120" />
-      </body>
-    </html>
-  `)
-})
+// Получаем данные пользователя
+const user: TgUser | undefined = tg.initDataUnsafe?.user;
 
-app.get('/about', function (req, res) {
-  res.sendFile(path.join(__dirname, '..', 'components', 'about.htm'))
-})
+// DOM
+const content = document.getElementById("content") as HTMLElement;
 
-// Example API endpoint - JSON
-app.get('/api-data', (req, res) => {
-  res.json({
-    message: 'Here is some sample API data',
-    items: ['apple', 'banana', 'cherry'],
-  })
-})
+// Проверка авторизации
+if (!user) {
+  content.innerHTML = "❌ Нет данных пользователя";
+  throw new Error("Telegram user not found");
+}
 
-// Health check
-app.get('/healthz', (req, res) => {
-  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() })
-})
+// Рендер главной
+renderHome();
 
-export default app
+// ====== FUNCTIONS ======
+
+function renderHome() {
+  content.innerHTML = `
+    <h3>👑 Админ панель</h3>
+    <p><b>ID:</b> ${user.id}</p>
+    <p><b>Username:</b> @${user.username ?? "—"}</p>
+  `;
+}
+
+// Навигация
+export function openSection(section: string) {
+  switch (section) {
+    case "applications":
+      content.innerHTML = `
+        <h3>📨 Заявки</h3>
+        <button id="on">Включить</button>
+        <button id="off">Отключить</button>
+      `;
+      break;
+
+    case "admins":
+      content.innerHTML = `<h3>👥 Админы</h3>`;
+      break;
+
+    case "logs":
+      content.innerHTML = `<h3>📊 Логи</h3>`;
+      break;
+
+    case "settings":
+      content.innerHTML = `<h3>⚙️ Настройки</h3>`;
+      break;
+  }
+}
+
+// Выход
+export function exitApp() {
+  tg.close();
+}
